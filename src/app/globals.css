@@ -128,3 +128,31 @@
     @apply font-sans;
   }
 }
+
+.cm-editor {
+  position: absolute;
+  inset: 0;
+  font-family: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  background: transparent;
+}
+.cm-editor.cm-focused {
+  outline: none;
+}
+.cm-editor .cm-scroller {
+  font-family: inherit;
+  line-height: 1.55;
+  overflow: auto;
+}
+.cm-editor .cm-gutters {
+  background: transparent;
+  border-right: 1px solid var(--border);
+  color: var(--muted-foreground);
+}
+.cm-editor .cm-activeLineGutter,
+.cm-editor .cm-activeLine {
+  background: color-mix(in oklab, var(--accent) 25%, transparent);
+}
+.cm-editor .cm-content {
+  caret-color: var(--foreground);
+}
