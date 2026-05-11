@@ -1,0 +1,3 @@
+{
+  "extends": "@t3code-clone/config/tsconfig.base.json"
+}
