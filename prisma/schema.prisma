@@ -1,0 +1,11 @@
+// Prisma 7: connection URLs live in prisma.config.ts (not here).
+// https://www.prisma.io/docs/orm/reference/prisma-schema-reference
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
