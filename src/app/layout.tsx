@@ -5,7 +5,7 @@ import { Providers } from "@/components/providers";
 
 import "./globals.css";
 import { cn } from "@/lib/utils";
-
+import { QueryProvider } from "@/components/providers/query-provider";
 const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
 const geistSans = Geist({
@@ -35,7 +35,11 @@ export default function RootLayout({
       className={cn("h-full", "antialiased", geistSans.variable, geistMono.variable, "font-sans", inter.variable)}
     >
       <body className="flex min-h-full flex-col font-sans">
-        <Providers>{children}</Providers>
+        <QueryProvider>
+          <Providers>
+            {children}
+          </Providers>
+        </QueryProvider>
       </body>
     </html>
   );
