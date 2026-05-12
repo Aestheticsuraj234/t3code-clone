@@ -7,7 +7,7 @@ import { useTreeExpansion } from "../hooks/use-tree-expansion";
 import type { FsNode } from "../libs/mock-files";
 import { walkFiles } from "../utils/flatten-tree";
 
-const DEFAULT_OPEN_FOLDERS = ["t3code-clone", "t3code-clone/src", "t3code-clone/src/app"];
+const DEFAULT_OPEN_FOLDERS = ["workspace"];
 
 export function ProjectFileTree({
   tree,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { Suspense, useCallback, useRef, useState } from "react";
 import { PanelLeftOpen } from "lucide-react";
 import type { PanelImperativeHandle } from "react-resizable-panels";
 
@@ -15,10 +15,35 @@ import { ProjectSidebar } from "@/features/project-sidebar/components/project-si
 
 import { useWorkbench } from "../hooks/use-workbench";
 import { MAIN_IDE_LAYOUT } from "../libs/default-layout";
+import { WorkspaceCommandPalette } from "./workspace-command-palette";
 import { RightPane } from "./right-pane";
 
-export function WorkspaceIde() {
-  const { sections, activeId, sidebarRowKey, onSidebarPick, thread } = useWorkbench();
+export type WorkspaceIdeProps = {
+  projectId?: string;
+  threadId?: string;
+};
+
+export function WorkspaceIde(props: WorkspaceIdeProps = {}) {
+  const { projectId, threadId } = props;
+  const {
+    sections,
+    activeId,
+    onSidebarPick,
+    chatTitle,
+    projectId: wbProjectId,
+    threadId: wbThreadId,
+    rawMessages,
+    branchLabel,
+    contextPercent,
+    messagesLoading,
+    statusIndicator,
+    onNewAgent,
+    newAgentPending,
+    onCreateWorkspace,
+    createWorkspacePending,
+    emptyProjects,
+    sidebarLoading,
+  } = useWorkbench({ projectId: projectId ?? null, threadId: threadId ?? null });
   const sidebarRef = useRef<PanelImperativeHandle | null>(null);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -33,6 +58,9 @@ export function WorkspaceIde() {
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col bg-background">
+      <Suspense fallback={null}>
+        <WorkspaceCommandPalette projectId={wbProjectId} threadId={wbThreadId} />
+      </Suspense>
       <ResizablePanelGroup
         id="ide-main"
         orientation="horizontal"
@@ -53,17 +81,35 @@ export function WorkspaceIde() {
             sections={sections}
             activeId={activeId}
             onSelect={onSidebarPick}
-            rowKey={sidebarRowKey}
             onClose={closeSidebar}
+            onNewAgent={onNewAgent}
+            newAgentPending={newAgentPending}
+            emptyProjects={emptyProjects}
+            onCreateWorkspace={onCreateWorkspace}
+            createWorkspacePending={createWorkspacePending}
+            loading={sidebarLoading}
           />
         </ResizablePanel>
         <ResizableHandle className="w-px bg-border" />
         <ResizablePanel id="chat" defaultSize="42%" minSize="26%" className="min-w-0">
-          <AgentChatPanel thread={thread} branchLabel="local master" contextPercent={64} />
+          <AgentChatPanel
+            projectId={wbProjectId}
+            threadId={wbThreadId}
+            chatTitle={chatTitle}
+            rawMessages={rawMessages}
+            branchLabel={branchLabel}
+            contextPercent={contextPercent}
+            messagesLoading={messagesLoading}
+            status={statusIndicator}
+          />
         </ResizablePanel>
         <ResizableHandle className="w-px bg-border" />
         <ResizablePanel id="code" defaultSize="38%" minSize="28%" className="min-w-0">
-          <RightPane />
+          <Suspense
+            fallback={<div className="h-full min-h-0 animate-pulse bg-muted/15" aria-hidden />}
+          >
+            <RightPane projectId={wbProjectId} threadId={wbThreadId} />
+          </Suspense>
         </ResizablePanel>
       </ResizablePanelGroup>
 

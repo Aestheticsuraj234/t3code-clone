@@ -2,13 +2,19 @@
 
 import { useCallback, useState } from "react";
 
-import { submitComposerDraft } from "../actions/compose-placeholder";
+type Options = {
+  onSend?: (text: string) => void;
+};
 
-export function useComposerDraft() {
+export function useComposerDraft({ onSend }: Options = {}) {
   const [draft, setDraft] = useState("");
+
   const send = useCallback(() => {
-    submitComposerDraft(draft);
+    const text = draft.trim();
+    if (!text || !onSend) return;
+    onSend(text);
     setDraft("");
-  }, [draft]);
+  }, [draft, onSend]);
+
   return { draft, setDraft, send };
 }
