@@ -1,7 +1,8 @@
 "use client";
 
-import { FolderCode, Mic, Plus, Sparkles } from "lucide-react";
+import { FolderCode, Loader2, Mic, Plus, Sparkles } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -9,24 +10,53 @@ import { Separator } from "@/components/ui/separator";
 
 import { useComposerDraft } from "../hooks/use-composer-draft";
 import type { AgentThread } from "../libs/mock-chat";
+import type { ThreadStatusIndicator } from "@/features/workspace/libs/thread-status-ui";
 import { ChatMessageBlocks } from "./chat-message-blocks";
 
 type AgentChatPanelProps = {
   thread: AgentThread;
   branchLabel: string;
   contextPercent: number;
+  status: ThreadStatusIndicator | null;
+  messagesLoading: boolean;
+  onSend: (text: string) => void;
+  sendPending: boolean;
 };
 
-export function AgentChatPanel({ thread, branchLabel, contextPercent }: AgentChatPanelProps) {
-  const { draft, setDraft, send } = useComposerDraft();
+function statusBadgeVariant(tone: ThreadStatusIndicator["tone"]) {
+  if (tone === "danger") return "destructive" as const;
+  if (tone === "success") return "secondary" as const;
+  return "outline" as const;
+}
+
+export function AgentChatPanel({
+  thread,
+  branchLabel,
+  contextPercent,
+  status,
+  messagesLoading,
+  onSend,
+  sendPending,
+}: AgentChatPanelProps) {
+  const { draft, setDraft, send } = useComposerDraft({ onSend });
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background text-foreground">
-      <div className="flex items-center gap-2 border-b border-border px-4 py-2">
-        <FolderCode className="size-4 text-muted-foreground" />
-        <span className="truncate font-medium text-sm">{thread.title}</span>
+      <div className="flex min-h-10 items-center gap-2 border-b border-border px-4 py-2">
+        <FolderCode className="size-4 shrink-0 text-muted-foreground" />
+        <span className="min-w-0 flex-1 truncate font-medium text-sm">{thread.title}</span>
+        {status ? (
+          <Badge variant={statusBadgeVariant(status.tone)} className="shrink-0 text-[10px]">
+            {status.label}
+          </Badge>
+        ) : null}
       </div>
-      <ScrollArea className="min-h-0 flex-1">
+      <ScrollArea className="relative min-h-0 flex-1">
+        {messagesLoading ? (
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-background/40">
+            <Loader2 className="size-6 animate-spin text-muted-foreground" aria-hidden />
+          </div>
+        ) : null}
         <div className="mx-auto w-full max-w-xl px-4 py-10">
           <div className="rounded-xl border border-border bg-card/60 p-5 shadow-sm">
             <ChatMessageBlocks thread={thread} />
@@ -51,6 +81,7 @@ export function AgentChatPanel({ thread, branchLabel, contextPercent }: AgentCha
               if (e.key === "Enter") send();
             }}
             placeholder="Send follow-up"
+            disabled={sendPending}
             className="h-9 flex-1 border-0 bg-transparent px-1 text-sm shadow-none focus-visible:ring-0"
           />
           <Button

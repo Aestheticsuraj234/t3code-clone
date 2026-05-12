@@ -17,8 +17,31 @@ import { useWorkbench } from "../hooks/use-workbench";
 import { MAIN_IDE_LAYOUT } from "../libs/default-layout";
 import { RightPane } from "./right-pane";
 
-export function WorkspaceIde() {
-  const { sections, activeId, sidebarRowKey, onSidebarPick, thread } = useWorkbench();
+export type WorkspaceIdeProps = {
+  projectId?: string;
+  threadId?: string;
+};
+
+export function WorkspaceIde(props: WorkspaceIdeProps = {}) {
+  const { projectId, threadId } = props;
+  const {
+    sections,
+    activeId,
+    onSidebarPick,
+    thread,
+    branchLabel,
+    contextPercent,
+    messagesLoading,
+    statusIndicator,
+    onSend,
+    sendPending,
+    onNewAgent,
+    newAgentPending,
+    onCreateWorkspace,
+    createWorkspacePending,
+    emptyProjects,
+    sidebarLoading,
+  } = useWorkbench({ projectId: projectId ?? null, threadId: threadId ?? null });
   const sidebarRef = useRef<PanelImperativeHandle | null>(null);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -53,13 +76,26 @@ export function WorkspaceIde() {
             sections={sections}
             activeId={activeId}
             onSelect={onSidebarPick}
-            rowKey={sidebarRowKey}
             onClose={closeSidebar}
+            onNewAgent={onNewAgent}
+            newAgentPending={newAgentPending}
+            emptyProjects={emptyProjects}
+            onCreateWorkspace={onCreateWorkspace}
+            createWorkspacePending={createWorkspacePending}
+            loading={sidebarLoading}
           />
         </ResizablePanel>
         <ResizableHandle className="w-px bg-border" />
         <ResizablePanel id="chat" defaultSize="42%" minSize="26%" className="min-w-0">
-          <AgentChatPanel thread={thread} branchLabel="local master" contextPercent={64} />
+          <AgentChatPanel
+            thread={thread}
+            branchLabel={branchLabel}
+            contextPercent={contextPercent}
+            status={statusIndicator}
+            messagesLoading={messagesLoading}
+            onSend={onSend}
+            sendPending={sendPending}
+          />
         </ResizablePanel>
         <ResizableHandle className="w-px bg-border" />
         <ResizablePanel id="code" defaultSize="38%" minSize="28%" className="min-w-0">
