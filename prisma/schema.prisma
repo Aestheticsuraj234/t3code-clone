@@ -10,6 +10,10 @@ datasource db {
   provider = "postgresql"
 }
 
+// ============================================================
+// Auth (Better Auth managed tables)
+// ============================================================
+
 model User {
   id            String    @id
   name          String
@@ -20,6 +24,7 @@ model User {
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
   accounts      Account[]
+  projects      Project[]
 
   @@unique([email])
   @@map("user")
@@ -71,4 +76,144 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
+}
+
+// ============================================================
+// Workspace
+// ============================================================
+
+model Project {
+  id        String        @id @default(cuid())
+  ownerId   String
+  owner     User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name      String
+  files     ProjectFile[]
+  threads   Thread[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([ownerId])
+  @@map("project")
+}
+
+model ProjectFile {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  path      String
+  content   String
+  size      Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([projectId, path])
+  @@index([projectId])
+  @@map("project_file")
+}
+
+// ============================================================
+// Agent runs
+// ============================================================
+
+model Thread {
+  id             String       @id @default(cuid())
+  projectId      String
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title          String
+  status         ThreadStatus @default(QUEUED)
+  sandboxId      String?
+  errorMessage   String?
+  lastActivityAt DateTime     @default(now())
+  messages       Message[]
+  changes        FileChange[]
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([projectId, lastActivityAt])
+  @@index([status])
+  @@map("thread")
+}
+
+model Message {
+  id        String      @id @default(cuid())
+  threadId  String
+  thread    Thread      @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  role      MessageRole
+  content   String
+  toolCalls ToolCall[]
+  createdAt DateTime    @default(now())
+
+  @@index([threadId, createdAt])
+  @@map("message")
+}
+
+model ToolCall {
+  id        String         @id @default(cuid())
+  messageId String
+  message   Message        @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  name      String
+  input     Json
+  output    Json?
+  status    ToolCallStatus @default(PENDING)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([messageId])
+  @@index([status])
+  @@map("tool_call")
+}
+
+model FileChange {
+  id         String           @id @default(cuid())
+  threadId   String
+  thread     Thread           @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  path       String
+  kind       FileChangeKind
+  oldContent String?
+  newContent String?
+  status     FileChangeStatus @default(PENDING)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@index([threadId, status])
+  @@index([threadId, path])
+  @@map("file_change")
+}
+
+// ============================================================
+// Enums
+// ============================================================
+
+enum ThreadStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  ERROR
+  CANCELLED
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  TOOL
+  SYSTEM
+}
+
+enum ToolCallStatus {
+  PENDING
+  RUNNING
+  OK
+  ERROR
+}
+
+enum FileChangeKind {
+  ADD
+  EDIT
+  DELETE
+}
+
+enum FileChangeStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
 }
