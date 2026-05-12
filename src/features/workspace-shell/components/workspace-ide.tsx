@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { Suspense, useCallback, useRef, useState } from "react";
 import { PanelLeftOpen } from "lucide-react";
 import type { PanelImperativeHandle } from "react-resizable-panels";
 
@@ -15,6 +15,7 @@ import { ProjectSidebar } from "@/features/project-sidebar/components/project-si
 
 import { useWorkbench } from "../hooks/use-workbench";
 import { MAIN_IDE_LAYOUT } from "../libs/default-layout";
+import { WorkspaceCommandPalette } from "./workspace-command-palette";
 import { RightPane } from "./right-pane";
 
 export type WorkspaceIdeProps = {
@@ -28,13 +29,14 @@ export function WorkspaceIde(props: WorkspaceIdeProps = {}) {
     sections,
     activeId,
     onSidebarPick,
-    thread,
+    chatTitle,
+    projectId: wbProjectId,
+    threadId: wbThreadId,
+    rawMessages,
     branchLabel,
     contextPercent,
     messagesLoading,
     statusIndicator,
-    onSend,
-    sendPending,
     onNewAgent,
     newAgentPending,
     onCreateWorkspace,
@@ -56,6 +58,9 @@ export function WorkspaceIde(props: WorkspaceIdeProps = {}) {
 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col bg-background">
+      <Suspense fallback={null}>
+        <WorkspaceCommandPalette projectId={wbProjectId} threadId={wbThreadId} />
+      </Suspense>
       <ResizablePanelGroup
         id="ide-main"
         orientation="horizontal"
@@ -88,18 +93,23 @@ export function WorkspaceIde(props: WorkspaceIdeProps = {}) {
         <ResizableHandle className="w-px bg-border" />
         <ResizablePanel id="chat" defaultSize="42%" minSize="26%" className="min-w-0">
           <AgentChatPanel
-            thread={thread}
+            projectId={wbProjectId}
+            threadId={wbThreadId}
+            chatTitle={chatTitle}
+            rawMessages={rawMessages}
             branchLabel={branchLabel}
             contextPercent={contextPercent}
-            status={statusIndicator}
             messagesLoading={messagesLoading}
-            onSend={onSend}
-            sendPending={sendPending}
+            status={statusIndicator}
           />
         </ResizablePanel>
         <ResizableHandle className="w-px bg-border" />
         <ResizablePanel id="code" defaultSize="38%" minSize="28%" className="min-w-0">
-          <RightPane />
+          <Suspense
+            fallback={<div className="h-full min-h-0 animate-pulse bg-muted/15" aria-hidden />}
+          >
+            <RightPane projectId={wbProjectId} threadId={wbThreadId} />
+          </Suspense>
         </ResizablePanel>
       </ResizablePanelGroup>
 

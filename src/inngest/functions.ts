@@ -12,3 +12,11 @@ export const processTask = inngest.createFunction(
     return { message: `Task ${event.data.id} complete`, result };
   }
 );
+
+/** Fires when the IDE agent finishes a chat turn (durable workflows can subscribe here). */
+export const onAgentChatCompleted = inngest.createFunction(
+  { id: "agent-chat-completed", triggers: { event: "agent/chat.completed" } },
+  async ({ event }) => {
+    return { acknowledged: true as const, projectId: event.data.projectId, threadId: event.data.threadId };
+  }
+);

@@ -4,14 +4,12 @@ import { useCallback, useEffect, useMemo } from "react";
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 
-import { messagesToChatBlocks } from "@/features/agent-chat/libs/messages-to-blocks";
-import type { AgentThread } from "@/features/agent-chat/libs/mock-chat";
+import type { StoredMessageRow } from "@/features/agent-chat/libs/db-messages-to-ui";
 import type { ProjectSidebarSection } from "@/features/project-sidebar/libs/sidebar-types";
 import * as workspaceApi from "@/features/workspace/apis/workspace-client";
 import { workspaceKeys } from "@/features/workspace/libs/query-keys";
-import { threadWorkspacePath } from "../libs/routes";
-import type { MessageRole } from "../../../../generated/browser";
 import type { ThreadStatusIndicator } from "@/features/workspace/libs/thread-status-ui";
+import { threadWorkspacePath } from "../libs/routes";
 
 type ProjectRow = {
   id: string;
@@ -28,12 +26,7 @@ type ThreadRow = {
   indicator: ThreadStatusIndicator;
 };
 
-type MessageRow = {
-  id: string;
-  role: MessageRole;
-  content: string;
-  createdAt: string;
-};
+type MessageRow = StoredMessageRow;
 
 export type WorkbenchRoute = {
   projectId: string | null;
@@ -128,15 +121,8 @@ export function useWorkbench(route: WorkbenchRoute) {
     return null;
   }, [sections, activeKeyForUi]);
 
-  const thread: AgentThread = useMemo(() => {
-    const title = selectedThread?.title ?? (hasRoute ? "Thread" : "Chat");
-    const messages = messagesQuery.data ?? [];
-    return {
-      id: msgIds.threadId ?? "draft",
-      title,
-      blocks: messagesToChatBlocks(messages),
-    };
-  }, [selectedThread, messagesQuery.data, msgIds.threadId, hasRoute]);
+  const chatTitle = selectedThread?.title ?? (hasRoute ? "Thread" : "Chat");
+  const rawMessages: StoredMessageRow[] = messagesQuery.data ?? [];
 
   useEffect(() => {
     if (hasRoute) return;
@@ -174,15 +160,6 @@ export function useWorkbench(route: WorkbenchRoute) {
     },
   });
 
-  const sendMessage = useMutation({
-    mutationFn: (vars: { content: string; projectId: string; threadId: string }) =>
-      workspaceApi.postThreadMessage(vars.projectId, vars.threadId, { content: vars.content }),
-    onSuccess: (_, vars) => {
-      void qc.invalidateQueries({ queryKey: workspaceKeys.messages(vars.projectId, vars.threadId) });
-      void qc.invalidateQueries({ queryKey: workspaceKeys.threads(vars.projectId) });
-    },
-  });
-
   const onSidebarPick = useCallback(
     (rowKey: string) => {
       const { projectId, threadId } = parseRowKey(rowKey);
@@ -192,31 +169,20 @@ export function useWorkbench(route: WorkbenchRoute) {
     [router],
   );
 
-  const onSend = useCallback(
-    (text: string) => {
-      if (!msgIds.projectId || !msgIds.threadId) return;
-      sendMessage.mutate({
-        content: text,
-        projectId: msgIds.projectId,
-        threadId: msgIds.threadId,
-      });
-    },
-    [msgIds.projectId, msgIds.threadId, sendMessage],
-  );
-
   const emptyProjects = projectsQuery.isSuccess && (projectsQuery.data?.length ?? 0) === 0;
 
   return {
     sections,
     activeId: activeKeyForUi,
     onSidebarPick,
-    thread,
+    chatTitle,
+    projectId: msgIds.projectId,
+    threadId: msgIds.threadId,
+    rawMessages,
     branchLabel: "local master",
     contextPercent: 64,
     messagesLoading: messagesQuery.isPending,
     statusIndicator: selectedThread?.indicator ?? null,
-    onSend,
-    sendPending: sendMessage.isPending,
     onNewAgent: () => newAgent.mutate(),
     newAgentPending: newAgent.isPending,
     onCreateWorkspace: () => createProject.mutate(),
